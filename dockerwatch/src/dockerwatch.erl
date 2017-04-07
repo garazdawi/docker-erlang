@@ -14,8 +14,13 @@
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    {ok, spawn_link(fun() -> ets:new(?MODULE, [named_table, public]),
-                    receive after infinity -> ok end end)}.
+    {ok, spawn_link(fun() ->
+                            ets:new(?MODULE, [named_table, public]),
+                            create(<<"cnt">>),
+                            receive
+                            after infinity -> ok
+                            end
+                    end)}.
 
 -spec all() -> [counter()].
 all() ->

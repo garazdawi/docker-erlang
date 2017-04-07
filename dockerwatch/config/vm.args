@@ -1,2 +1,5 @@
 -sname dockerwatch
-
++K true
++P 5000000
++Q 5000000
++sbwt very_short

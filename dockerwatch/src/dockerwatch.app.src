@@ -10,7 +10,9 @@
 		stdlib,
                 lager,
                 jsone,
-		cowboy
+		cowboy,
+                tools,
+                runtime_tools
 	]},
 	{mod, {dockerwatch_app, []}},
 	{env, []}

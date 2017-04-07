@@ -60,6 +60,7 @@ content_types_provided(Req, State) ->
 
 %% Return counters/counter as json
 to_json(Req, State) ->
+    erlang:garbage_collect(),
     Resp = case cowboy_req:binding(counter_name, Req) of
                {undefined, _Req2} ->
                    dockerwatch:all();
