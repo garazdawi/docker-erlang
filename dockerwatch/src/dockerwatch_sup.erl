@@ -39,9 +39,11 @@ init([]) ->
     [ranch:start_listener(
        Name,
        400, ranch_tcp,
-       [{port, 8080},{backlog,400},
+       [{port, 8080},{backlog,4000},
         {ip, Ip},
-        {sndbuf, 512},{recbuf, 512},{buffer,512},
+        {sndbuf, 512},
+        {recbuf, 512},
+        {buffer,512},
         {max_connections, infinity}],
        cowboy_protocol,
        [{max_keepalive,5000000},

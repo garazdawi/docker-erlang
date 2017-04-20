@@ -1,5 +1,10 @@
-#!/bin/sh
- 
-docker build --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTP_PROXY --build-arg NO_PROXY=$NO_PROXY --build-arg no_proxy=$NO_PROXY -t build_erlang-dockerwatch --file=alpine/build/Dockerfile .
-docker run -e http_proxy=$HTTP_PROXY -e https_proxy=$HTTP_PROXY -e HTTP_PROXY=$HTTP_PROXY -e HTTPS_PROXY=$HTTP_PROXY -e NO_PROXY=$NO_PROXY -e no_proxy=$NO_PROXY --rm --volume="$PWD/alpine/run/artifacts:/artifacts" build_erlang-dockerwatch
-docker build --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTP_PROXY --build-arg NO_PROXY=$NO_PROXY --build-arg no_proxy=$NO_PROXY -t erlang-dockerwatch alpine/run/
+#!/bin/bash
+
+set -e
+
+IMAGE_NAME=${1-erlang-dockerwatch}
+HTTP_PROXY=${HTTP_PROXY-http://www-proxy.ericsson.se:8080}
+
+docker build --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTP_PROXY --build-arg NO_PROXY=$NO_PROXY --build-arg no_proxy=$NO_PROXY -t build_$IMAGE_NAME --file=alpine/build/Dockerfile .
+docker run -e http_proxy=$HTTP_PROXY -e https_proxy=$HTTP_PROXY -e HTTP_PROXY=$HTTP_PROXY -e HTTPS_PROXY=$HTTP_PROXY -e NO_PROXY=$NO_PROXY -e no_proxy=$NO_PROXY --rm --volume="$PWD/alpine/run/artifacts:/artifacts" build_$IMAGE_NAME
+docker build --build-arg https_proxy=$HTTP_PROXY --build-arg http_proxy=$HTTP_PROXY --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTP_PROXY --build-arg NO_PROXY=$NO_PROXY --build-arg no_proxy=$NO_PROXY -t $IMAGE_NAME alpine/run/

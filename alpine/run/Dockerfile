@@ -3,7 +3,8 @@ FROM alpine:3.3
 RUN apk add --no-cache ncurses-libs && \
     apk add --no-cache libcrypto1.0
 
-RUN apk add --no-cache gdb
+RUN apk add --no-cache gdb && \
+    apk add --no-cache musl-dbg
 
 # Install the released application
 COPY artifacts/dockerwatch /dockerwatch

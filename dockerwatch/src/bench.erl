@@ -31,53 +31,26 @@ connector_loop(S = #{ alive := Alive }) ->
             [P ! {set_interval, Interval} || {P,_} <- Alive],
             connector_loop(S);
         {start, Pid, N, Rate} ->
-            NewConns = start_connections(N, 120 * 1000, 1000 div Rate),
+            NewConns = start_connections(N, 120 * 1000, 1000 div Rate,
+                                         Rate div 1000),
             Pid ! ok,
             connector_loop(S#{ alive := lists:flatten([NewConns|Alive]) })
     end.
 
-start_connections(0, _Interval, _Sleep) ->
+start_connections(PoolSize, Interval, 0, Rate) ->
+    start_connections(PoolSize, Interval, 1, Rate);
+start_connections(PoolSize, Interval, Sleep, 0) ->
+    start_connections(PoolSize, Interval, Sleep, 1);
+start_connections(0, _Interval, _Sleep, _Rate) ->
     [];
-start_connections(PoolSize, Interval, Sleep) when PoolSize < 30 ->
-    [begin
+start_connections(PoolSize, Interval, Sleep, Rate) when PoolSize < Rate ->
          timer:sleep(Sleep),
-         spawn_monitor(fun() -> init(Interval) end)
-     end | start_connections(PoolSize-1, Interval, Sleep)];
-start_connections(PoolSize, Interval, Sleep) ->
-    [begin
-         timer:sleep(Sleep),
-         [spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end),
-          spawn_monitor(fun() -> init(Interval) end)]
-     end | start_connections(PoolSize-30, Interval, Sleep)].
-
+    [ spawn_monitor(fun() -> init(Interval) end)
+     | start_connections(PoolSize-1, Interval, Sleep, Rate)];
+start_connections(PoolSize, Interval, Sleep, Rate) ->
+    timer:sleep(Sleep),
+    [[spawn_monitor(fun() -> init(Interval) end) || _ <- lists:seq(1,Rate)]
+     | start_connections(PoolSize-Rate, Interval, Sleep, Rate)].
 
 init(Interval) ->
     loop(do_request(undefined), Interval, []).
@@ -102,6 +75,8 @@ do_request(S) ->
         {NewS, error, Reason} ->
             case Reason of
                 timeout ->
+                    io:format("T");
+                timedout ->
                     io:format("T");
                 eaddrinuse ->
                     io:format("E"),
