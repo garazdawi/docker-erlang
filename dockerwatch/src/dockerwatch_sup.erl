@@ -9,7 +9,7 @@
 -module(dockerwatch_sup).
 -behaviour(supervisor).
 
--export([start_link/0,init/1, spawn_info/0, info/0, ips/0]).
+-export([start_link/0,init/1, spawn_info/0, info/0, ips/0, wait_for_conns/1]).
 
 %% API.
 
@@ -92,4 +92,14 @@ ips() ->
             IPs;
         IPs ->
             IPs
+    end.
+
+wait_for_conns(Conns) ->
+    case info() of
+        {C, _, _} when C < (Conns * 0.95) ->
+            io:format("Current clients ~p~n",[C]),
+            timer:sleep(5000),
+            wait_for_conns(Conns);
+        _ ->
+            ok
     end.

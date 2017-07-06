@@ -2,16 +2,20 @@
 
 set -e
 
+#LOGFILE=/dev/tty
 LOGFILE=../bench.log
 ! rm $LOGFILE
 
 KERNEL_POLL=${KERNEL_POLL-true false}
-DOCKER_ARGS=--cpuset-cpus="0-24"
 
 WRK_CLIENTS=${WRK_CLIENTS-1000}
 WRK_RATES=${WRK_RATES-10000 50000 75000}
 #WRK_RATES=${WRK_RATES-1000 10000 25000 50000 60000 70000 80000 90000 100000 110000 120000 130000}
-BACKGROUND_CLIENTS=${BACKGROUND_CLIENTS-0 10000 25000 50000 75000 100000 200000 300000 400000}
+BACKGROUND_CLIENTS=${BACKGROUND_CLIENTS-0 10000 25000 50000 75000 100000 200000}
+#BACKGROUND_CLIENTS=${BACKGROUND_CLIENTS-0 10000 25000 50000 75000 100000 200000 300000 400000}
+
+#BACKGROUND_CLIENTS="0 10000 100000"
+#BACKGROUND_CLIENTS="100000"
 
 for IMAGE in $*; do
     cp $IMAGE.tar.gz otp.tar.gz
@@ -25,7 +29,7 @@ for IMAGE in $*; do
         else
             RES_FILE=$IMAGE-nkp-bench.res
         fi
-        ./start.sh server +K $KP >> $LOGFILE
+        ./start.sh server +K {KP} >> $LOGFILE
         sleep 1
 
         ! rm $RES_FILE >> $LOGFILE
@@ -33,20 +37,16 @@ for IMAGE in $*; do
 
         for BACKGROUND in $BACKGROUND_CLIENTS; do
             echo "Running $BACKGROUND background connections"
-            NUM_CLIENTS=$BACKGROUND ./start.sh client >> $LOGFILE
-            CURR_CLIENTS=0
+            NUM_CLIENTS=$BACKGROUND ./start.sh client +K true >> $LOGFILE
+            NUM_CLIENTS=$BACKGROUND ./start.sh active-clients
 
-            while [ $CURR_CLIENTS -lt $(( BACKGROUND*95/100 )) ]; do
-                sleep 5
-                CURR_CLIENTS=`./start.sh active-clients`
-                echo "Current clients $CURR_CLIENTS"
-            done
+            sleep 10
 
             for CLIENTS in $WRK_CLIENTS; do
                 for RATE in $WRK_RATES; do
                     echo "Running -c$CLIENTS -R$RATE"
                     echo -n "$BACKGROUND $CLIENTS $RATE " >> $RES_FILE
-                    docker run --cpuset-cpus="25-31" --network network1 --ip "172.19.1.4" --rm 1vlad/wrk2-docker -t6 -c$CLIENTS -d15s -R$RATE -L http://172.19.1.2:8080/cnt > $TEMP
+                    ./start.sh wrk -t6 -c$CLIENTS -d15s -R$RATE -L > $TEMP
                     grep "    Latency" $TEMP | awk '{printf $2 " " $3 " " $4 " "}' | awk -f ts-convert.awk >> $RES_FILE
                     grep "Requests/sec" $TEMP | awk '{printf $2}' >> $RES_FILE
                     grep "^[ 0-9.]\+%" $TEMP | awk '{ printf $2 " " }' | awk -f ts-convert.awk >> $RES_FILE

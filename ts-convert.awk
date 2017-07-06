@@ -5,7 +5,7 @@
         unit = $i;
         sub(/^[^a-z]+/, "", unit);
 
-        # convert to nanoseconds
+        # convert to microseconds
         if (unit == "us") {
             time *= 1;
         } else if (unit == "ms") {
