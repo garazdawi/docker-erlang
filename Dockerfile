@@ -34,4 +34,4 @@ COPY --from=0 /buildroot/dockerwatch/_build/prod/rel/dockerwatch /dockerwatch
 EXPOSE 8080
 EXPOSE 8443
 
-CMD ["/dockerwatch/bin/dockerwatch", "foreground"]
+CMD ["/dockerwatch/bin/dockerwatch", "console"]

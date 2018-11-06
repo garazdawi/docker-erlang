@@ -5,11 +5,13 @@
 	{vsn, "1.0.0"},
 	{modules, []},
 	{registered, [dockerwatch_sup]},
-	{applications, [
-		kernel,
-		stdlib,
-                jsone,
-		cowboy
+	{applications, [prometheus,
+                        prometheus_cowboy,
+                        prometheus_process_collector,
+                        kernel,
+                        stdlib,
+                        jsone,
+                        cowboy
 	]},
 	{mod, {dockerwatch_app, []}},
 	{env, []}

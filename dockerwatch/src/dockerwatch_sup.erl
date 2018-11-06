@@ -23,8 +23,13 @@ init([]) ->
     CertsDir = "/etc/ssl/certs/",
 
     Dispatch = cowboy_router:compile([
-	    {'_', [{"/[:counter_name]", dockerwatch_handler, []}]}
+	    {'_', [{"/[:counter_name]", dockerwatch_handler, []},
+                   {"/metrics/[:registry]", prometheus_cowboy2_handler, []}]}
 	]),
+
+    CowConfig = #{ env => #{ dispatch => Dispatch },
+                   metrics_callback => fun prometheus_cowboy2_instrumenter:observe/1,
+                   stream_handlers => [cowboy_metrics_h, cowboy_stream_h] },
 
     HTTPS = ranch:child_spec(
               cowboy_https, 100, ranch_ssl,
@@ -33,13 +38,13 @@ init([]) ->
                {certfile, filename:join(CertsDir, "dockerwatch-server.pem")},
                {keyfile, filename:join(CertsDir, "dockerwatch-server.key")}],
               cowboy_tls,
-              #{env=>#{dispatch=>Dispatch}}),
+              CowConfig),
 
     HTTP = ranch:child_spec(
              cowboy_http, 100, ranch_tcp,
              [{port, 8080}],
              cowboy_clear,
-             #{env=>#{dispatch=>Dispatch}}),
+             CowConfig),
 
     Counter = {dockerwatch, {dockerwatch, start_link, []},
                permanent, 5000, worker, [dockerwatch]},
