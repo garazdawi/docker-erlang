@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: dockerwatch
+  name: dockerwatch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: dockerwatch
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        name: dockerwatch
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+    spec:
+      containers:
+      - image: sekidocker.rnd.ki.sw.ericsson.se/proj-erlang/dockerwatch
+        name: dockerwatch
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        - containerPort: 9000
+          protocol: TCP
+        stdin: true
+        tty: true
+      imagePullSecrets:
+        - name: seki

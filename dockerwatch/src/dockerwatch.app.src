@@ -10,6 +10,7 @@
                         prometheus_process_collector,
                         kernel,
                         stdlib,
+                        runtime_tools,
                         jsone,
                         cowboy
 	]},
