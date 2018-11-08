@@ -34,6 +34,8 @@ spec:
           protocol: TCP
         - containerPort: 9000
           protocol: TCP
+        - containerPort: 12345
+          protocol: TCP
         stdin: true
         tty: true
         resources:
@@ -45,3 +47,30 @@ spec:
             memory: 100Mi
       imagePullSecrets:
         - name: seki
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dockerwatch-ext
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    name: http
+  - port: 8443
+    protocol: TCP
+    name: https
+  selector:
+    name: dockerwatch
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dockerwatch
+spec:
+  ports:
+  - port: 12345
+    protocol: TCP
+  selector:
+    name: dockerwatch

@@ -2,13 +2,13 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    name: mnesia
-  name: mnesia
+    name: dockerwatch-mnesia
+  name: dockerwatch-mnesia
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: mnesia
+      name: dockerwatch-mnesia
   strategy:
     rollingUpdate:
       maxSurge: 10
@@ -18,18 +18,13 @@ spec:
     metadata:
       creationTimestamp: null
       labels:
-        name: mnesia
+        name: dockerwatch-mnesia
     spec:
+      imagePullSecrets:
+        - name: seki
       containers:
       - image: sekidocker.rnd.ki.sw.ericsson.se/proj-erlang/dockerwatch-mnesia
-        name: mnesia
-        command:
-        - erl
-        args:
-        - -sname mnesia
-        - -s mnesia
-        - -start_epmd false
-        - -epmd_module epmd_static
+        name: dockerwatch-mnesia
         imagePullPolicy: Always
         ports:
         - containerPort: 12345
@@ -43,3 +38,14 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dockerwatch-mnesia
+spec:
+  ports:
+  - port: 12345
+    protocol: TCP
+  selector:
+    name: dockerwatch-mnesia
