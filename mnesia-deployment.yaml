@@ -2,37 +2,37 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    name: dockerwatch
-  name: dockerwatch
+    name: mnesia
+  name: mnesia
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: dockerwatch
+      name: mnesia
   strategy:
     rollingUpdate:
-      maxSurge: 1
+      maxSurge: 10
       maxUnavailable: 1
     type: RollingUpdate
   template:
     metadata:
       creationTimestamp: null
       labels:
-        name: dockerwatch
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9000"
+        name: mnesia
     spec:
       containers:
-      - image: sekidocker.rnd.ki.sw.ericsson.se/proj-erlang/dockerwatch
-        name: dockerwatch
+      - image: sekidocker.rnd.ki.sw.ericsson.se/proj-erlang/dockerwatch-mnesia
+        name: mnesia
+        command:
+        - erl
+        args:
+        - -sname mnesia
+        - -s mnesia
+        - -start_epmd false
+        - -epmd_module epmd_static
         imagePullPolicy: Always
         ports:
-        - containerPort: 8080
-          protocol: TCP
-        - containerPort: 8443
-          protocol: TCP
-        - containerPort: 9000
+        - containerPort: 12345
           protocol: TCP
         stdin: true
         tty: true
@@ -43,5 +43,3 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
-      imagePullSecrets:
-        - name: seki
