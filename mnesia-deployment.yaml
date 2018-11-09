@@ -19,15 +19,18 @@ spec:
       creationTimestamp: null
       labels:
         name: dockerwatch-mnesia
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
     spec:
-      imagePullSecrets:
-        - name: seki
       containers:
       - image: sekidocker.rnd.ki.sw.ericsson.se/proj-erlang/dockerwatch-mnesia
         name: dockerwatch-mnesia
         imagePullPolicy: Always
         ports:
         - containerPort: 12345
+          protocol: TCP
+        - containerPort: 9000
           protocol: TCP
         stdin: true
         tty: true
@@ -38,6 +41,8 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+      imagePullSecrets:
+        - name: seki
 ---
 apiVersion: v1
 kind: Service

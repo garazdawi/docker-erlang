@@ -1,0 +1,4 @@
+-name dockerwatch_mnesia@dockerwatch-mnesia.default.svc.cluster.local
+-start_epmd false
+-epmd_module epmd_static
+-setcookie test

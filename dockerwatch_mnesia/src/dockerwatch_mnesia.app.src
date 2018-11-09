@@ -1,0 +1,19 @@
+%% Feel free to use, reuse and abuse the code in this file.
+
+{application, dockerwatch_mnesia, [
+	{description, "Mnesia node."},
+	{vsn, "1.0.0"},
+	{modules, []},
+	{registered, [dockerwatch_mnesia_sup]},
+	{applications, [cowboy,
+                        prometheus,
+                        prometheus_cowboy,
+                        prometheus_process_collector,
+                        kernel,
+                        stdlib,
+                        runtime_tools,
+                        mnesia
+	]},
+	{mod, {dockerwatch_mnesia_app, []}},
+	{env, []}
+]}.

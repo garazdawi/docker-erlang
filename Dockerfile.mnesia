@@ -1,0 +1,42 @@
+# Build stage 0
+FROM erlang:alpine
+
+RUN apk add --no-cache make && \
+    apk add --no-cache g++
+
+# Install Rebar3
+RUN mkdir -p /buildroot/rebar3/bin
+ADD https://s3.amazonaws.com/rebar3/rebar3 /buildroot/rebar3/bin/rebar3
+RUN chmod a+x /buildroot/rebar3/bin/rebar3
+
+# Setup Environment
+ENV PATH=/buildroot/rebar3/bin:$PATH
+
+# Reset working directory
+WORKDIR /buildroot
+
+# Copy our Erlang test application
+COPY dockerwatch_mnesia dockerwatch_mnesia
+
+# And build the release
+WORKDIR dockerwatch_mnesia
+RUN rebar3 as prod release
+
+
+# Build stage 1
+FROM alpine
+
+# Install some libs
+RUN apk add --no-cache openssl && \
+    apk add --no-cache ncurses-libs && \
+    apk add --no-cache libstdc++ && \
+    apk add --no-cache curl && \
+    apk add --no-cache less
+
+# Install the released application
+COPY --from=0 /buildroot/dockerwatch_mnesia/_build/prod/rel/dockerwatch_mnesia /dockerwatch_mnesia
+
+# Expose relevant ports
+EXPOSE 12345
+
+CMD ["/dockerwatch_mnesia/bin/dockerwatch_mnesia", "console"]
