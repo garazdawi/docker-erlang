@@ -36,6 +36,8 @@ RUN apk add --no-cache openssl && \
 # Install the released application
 COPY --from=0 /buildroot/dockerwatch/_build/prod/rel/dockerwatch /dockerwatch
 
+COPY tls_dist.conf /dockerwatch/
+
 # Expose relevant ports
 EXPOSE 8080
 EXPOSE 8443

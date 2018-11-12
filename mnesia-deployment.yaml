@@ -41,6 +41,14 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
+        volumeMounts:
+            - name: kube-keypair
+              readOnly: true
+              mountPath: /etc/erlang/ssl
+      volumes:
+        - name: kube-keypair
+          secret:
+            secretName: dockerwatch-mnesia-dist
       imagePullSecrets:
         - name: seki
 ---

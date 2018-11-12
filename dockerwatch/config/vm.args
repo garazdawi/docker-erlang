@@ -1,4 +1,0 @@
--name dockerwatch@dockerwatch.default.svc.cluster.local
--start_epmd false
--epmd_module epmd_static
--setcookie test

@@ -1,22 +1,45 @@
 #!/bin/sh
 
 set -e
+set -x
+
+csr () {
+
+    CSR=$2/$3.csr
+    CSR_NAME=$4-csr
+    openssl req -new -config $1 -out $CSR -keyout $2/$3.key
+
+    cat <<EOF | kubectl create -f -
+apiVersion: certificates.k8s.io/v1beta1
+kind: CertificateSigningRequest
+metadata:
+  name: $CSR_NAME
+spec:
+  groups:
+  - system:authenticated
+  request: $(cat $CSR | base64 | tr -d '\n')
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+EOF
+    kubectl certificate approve $CSR_NAME
+    kubectl get csr $CSR_NAME -o jsonpath='{.status.certificate}' | base64 -d > $2/$3.crt
+    kubectl create secret generic $4 --from-file $2
+}
 
 if [ ! -d ssl ]; then
     mkdir ssl
 fi
 
-# Create the root CA (Certificate Authority)
-openssl genrsa -out ssl/dockerwatch-ca.key 4096
+rm -rf ssl/dockerwatch/
+mkdir ssl/dockerwatch/
 
-## Certificate signing request for root CA
-openssl req -x509 -new -nodes -key ssl/dockerwatch-ca.key -sha256 -days 1024 -subj "/C=SE/" -out ssl/dockerwatch-ca.pem
+# csr dockerwatch-openssl.conf ssl/dockerwatch server dockerwatch-server
 
-# Create the server certificate
-openssl genrsa -out ssl/dockerwatch-server.key 4096
+csr dockerwatch-dist-openssl.conf ssl/dockerwatch dist dockerwatch-dist
 
-## Certificate signing request for server certificate
-openssl req -new -key ssl/dockerwatch-server.key -subj "/C=SE/CN=localhost/" -out ssl/dockerwatch-server.csr
+rm -rf ssl/dockerwatch_mnesia/
+mkdir ssl/dockerwatch_mnesia/
+csr dockerwatch-mnesia-dist-openssl.conf ssl/dockerwatch_mnesia dist dockerwatch-mnesia-dist
 
-## Sign the server certificate using the root CA
-openssl x509 -req -in ssl/dockerwatch-server.csr -CA ssl/dockerwatch-ca.pem -CAkey ssl/dockerwatch-ca.key -CAcreateserial -out ssl/dockerwatch-server.pem -days 500 -sha256

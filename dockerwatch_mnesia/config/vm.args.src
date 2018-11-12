@@ -2,3 +2,5 @@
 -start_epmd false
 -epmd_module epmd_static
 -setcookie test
+#-proto_dist inet_tls
+#-ssl_dist_optfile "/dockerwatch_mnesia/tls_dist.conf"

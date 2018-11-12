@@ -36,6 +36,8 @@ RUN apk add --no-cache openssl && \
 # Install the released application
 COPY --from=0 /buildroot/dockerwatch_mnesia/_build/prod/rel/dockerwatch_mnesia /dockerwatch_mnesia
 
+COPY tls_dist.conf /dockerwatch_mnesia/
+
 # Expose relevant ports
 EXPOSE 12345
 
