@@ -1,4 +1,6 @@
 -name dockerwatch@${IP}
 -setcookie dockerwatch
 -start_epmd false
--epmd_module epmd_static
+-epmd_module epmd_dns_srv
+-hidden
+-kernel inet_tcp_dist_port ${PORT}

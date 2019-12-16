@@ -9,8 +9,7 @@
 		kernel,
 		stdlib,
                 jsone,
-                cowboy,
-                mnesia
+                cowboy
 	]},
 	{mod, {dockerwatch_app, []}},
 	{env, []}

@@ -4,7 +4,7 @@
 	{description, "Mnesia node."},
 	{vsn, "1.0.0"},
 	{modules, []},
-	{registered, [backend_sup]},
+	{registered, [dockerwatch_sup]},
 	{applications, [kernel,
                         stdlib,
                         mnesia

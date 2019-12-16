@@ -1,3 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dockerwatch
+  labels:
+    app: dockerwatch
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    name: http
+  - port: 8443
+    name: https
+  selector:
+    app: dockerwatch
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,7 +22,7 @@ metadata:
     app: dockerwatch
   name: dockerwatch
 spec:
-  replicas: 10
+  replicas: 1
   selector:
     matchLabels:
       app: dockerwatch
@@ -36,6 +52,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: BACKEND
+          value: mnesia.default.svc.cluster.local
+        - name: PORT
+          value: "12345"
       volumes:
         - name: kube-keypair
           secret:

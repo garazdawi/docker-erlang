@@ -1,69 +1,52 @@
 %%
 %% Copyright (C) 2014 Björn-Egil Dahlberg
 %%
-%% File:    dockerwatch.erl
+%% File:    dockerwatch_handler.erl
 %% Author:  Björn-Egil Dahlberg
 %% Created: 2014-09-10
 %%
 
 -module(dockerwatch).
 
--export([start_link/0, all/0, create/1, get/1, increment/2, decrement/2]).
+-export([all/0, create/1, get/1, increment/2, decrement/2]).
 
 -type counter() :: binary().
 
--spec start_link() -> {ok, pid()}.
-start_link() ->
-    ok = mnesia:wait_for_tables([?MODULE], 15000),
-    ignore.
-
 -spec all() -> [counter()].
 all() ->
-    case mnesia:transaction(
-           fun() ->
-                   mnesia:select(?MODULE, [{{'$1','_'},[],['$1']}])
-           end) of
-        {atomic, Res} ->
-            Res
-    end.
+    rpc(?MODULE,?FUNCTION_NAME,[]).
 
 -spec create(counter()) -> ok | already_exists.
 create(CounterName) ->
-    case mnesia:transaction(
-           fun() ->
-                   case mnesia:read(?MODULE, CounterName) of
-                       [] ->
-                           mnesia:write({?MODULE,CounterName,0}),
-                           ok;
-                       _Else ->
-                           already_exists
-                   end
-           end) of
-        {atomic, Res} ->
-            Res
-    end.
+    rpc(?MODULE,?FUNCTION_NAME,[CounterName]).
 
 -spec get(counter()) -> integer().
 get(CounterName) ->
-    case mnesia:transaction(
-           fun() ->
-                   mnesia:read(?MODULE, CounterName)
-           end) of
-        {atomic,[{?MODULE, _, Cnt}]} ->
-            Cnt
-    end.
+    rpc(?MODULE,?FUNCTION_NAME,[CounterName]).
 
 -spec increment(counter(), integer()) -> ok.
 increment(CounterName, Howmuch) ->
-    case mnesia:transaction(
-           fun() ->
-                   [{?MODULE, _, Cnt}] = mnesia:read(?MODULE, CounterName),
-                   mnesia:write({?MODULE, CounterName, Cnt + Howmuch})
-           end) of
-        {atomic, ok} ->
-            ok
-    end.
+    rpc(?MODULE,?FUNCTION_NAME,[CounterName, Howmuch]).
 
 -spec decrement(counter(), integer()) -> ok.
 decrement(CounterName, Howmuch) ->
-    increment(CounterName, -1 * Howmuch).
+    rpc(?MODULE,?FUNCTION_NAME,[CounterName, Howmuch]).
+
+rpc(M,F,A) ->
+    rpc:call(get_node_from_srv(),M,F,A).
+
+get_node_from_srv() ->
+    {ok, SVC} = application:get_env(dockerwatch,backend),
+    Nodes = inet_res:lookup(SVC,in,srv),
+    NodeSum = lists:foldl(fun({_,Weight,_,_},Acc) ->
+                                  Weight + Acc
+                          end,0,Nodes),
+    Rand = rand:uniform(NodeSum),
+    Host = lists:foldl(fun({_,Weight,_,Host},Acc) when (Acc - Weight) =< 0 ->
+                               Host;
+                          ({_,Weight,_,Host},Acc) when is_integer(Acc) ->
+                               Acc - Weight;
+                          (_,Host) ->
+                               Host
+                       end,Rand,Nodes),
+    list_to_atom("dockerwatch@"++Host).

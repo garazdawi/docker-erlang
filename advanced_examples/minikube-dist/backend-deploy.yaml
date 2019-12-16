@@ -1,33 +1,52 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  ## Name and labels of the Deployment
-  labels:
-    app: backend
-  name: backend
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      labels:
-        app: backend
-    spec:
-      containers:
-      ## The container to launch
-      - image: backend
-        name: backend
-        imagePullPolicy: Never
----
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: mnesia
+  labels:
+    app: mnesia
 spec:
   ports:
   - port: 12345
-    protocol: TCP
+    name: mnesia
+  clusterIP: None
   selector:
-    app: backend
+    app: mnesia
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mnesia
+spec:
+  selector:
+    matchLabels:
+      app: mnesia # has to match .spec.template.metadata.labels
+  serviceName: "mnesia"
+  replicas: 2 # by default is 1
+  template:
+    metadata:
+      labels:
+        app: mnesia # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: mnesia
+        image: backend
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 12345
+          name: dist
+        env:
+        - name: PORT
+          value: "12345"
+        - name: NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SVC
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']

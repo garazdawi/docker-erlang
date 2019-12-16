@@ -41,9 +41,6 @@ init([]) ->
              cowboy_clear,
              #{env=>#{dispatch=>Dispatch}}),
 
-    Counter = {dockerwatch, {dockerwatch, start_link, []},
-               permanent, 5000, worker, [dockerwatch]},
-
-    Procs = [Counter, HTTP, HTTPS],
+    Procs = [HTTP, HTTPS],
 
     {ok, {{one_for_one, 10, 10}, Procs}}.
