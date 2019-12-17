@@ -48,14 +48,8 @@ spec:
               readOnly: true
               mountPath: /etc/ssl/certs
         env:
-        - name: IP
-          valueFrom:
-            fieldRef:
-              fieldPath: status.podIP
         - name: BACKEND
           value: mnesia.default.svc.cluster.local
-        - name: PORT
-          value: "12345"
       volumes:
         - name: kube-keypair
           secret:
