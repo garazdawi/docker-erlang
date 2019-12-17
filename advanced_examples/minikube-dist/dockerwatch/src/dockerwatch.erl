@@ -44,7 +44,7 @@ get_node_from_srv() ->
     Rand = rand:uniform(NodeSum),
     Host = lists:foldl(fun({_,Weight,_,Host},Acc) when (Acc - Weight) =< 0 ->
                                Host;
-                          ({_,Weight,_,Host},Acc) when is_integer(Acc) ->
+                          ({_,Weight,_,_Host},Acc) when is_integer(Acc) ->
                                Acc - Weight;
                           (_,Host) ->
                                Host

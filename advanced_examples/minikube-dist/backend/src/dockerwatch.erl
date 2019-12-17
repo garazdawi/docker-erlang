@@ -10,34 +10,25 @@
 
 -export([start_link/0, all/0, create/1, get/1, increment/2, decrement/2]).
 
--include_lib("kernel/include/inet.hrl").
 -include_lib("kernel/include/logger.hrl").
 
 -type counter() :: binary().
 
 -spec start_link() -> {ok, pid()}.
 start_link() ->
-    case get_extra_nodes() of
-        [] ->
-            mnesia:change_table_copy_type(schema, node(), disc_copies),
-            mnesia:create_table(?MODULE,
-                                [{disc_copies,[node()]},
-                                 {ram_copies,[]}]);
-        ExtraNodes ->
-            mnesia:change_config(extra_db_nodes,ExtraNodes),
-            mnesia:change_table_copy_type(schema, node(), disc_copies),
+    mnesia:change_config(extra_db_nodes,nodes()),
+    mnesia:change_table_copy_type(schema, node(), disc_copies),
+
+    case mnesia:create_table(?MODULE,
+                             [{disc_copies,[node()|nodes()]},
+                              {ram_copies,[]}]) of
+        {atomic,ok} ->
+            ok;
+        _ ->
             mnesia:add_table_copy(?MODULE, node(), disc_copies)
     end,
 
-    ok = mnesia:wait_for_tables([?MODULE], 15000),
     ignore.
-
-get_extra_nodes() ->
-    {ok, SVC} = application:get_env(backend, service),
-    {ok,#hostent{ h_name = FQDN }} = inet:gethostbyname(SVC),
-    [list_to_atom("dockerwatch@"++Host) ||
-        {_Prio,_Weight,_Port,Host} <- inet_res:lookup(FQDN,any,srv)] -- [node()].
-
 
 -spec all() -> [counter()].
 all() ->

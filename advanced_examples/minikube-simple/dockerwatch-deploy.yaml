@@ -6,7 +6,7 @@ metadata:
     app: dockerwatch
   name: dockerwatch
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: dockerwatch
