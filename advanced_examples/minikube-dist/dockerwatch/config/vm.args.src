@@ -1,4 +1,4 @@
--name dockerwatch
+-name dockerwatch@${HOSTNAME}
 -setcookie dockerwatch
 -epmd_module epmd_dns_srv
 -hidden

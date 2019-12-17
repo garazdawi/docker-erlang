@@ -38,10 +38,6 @@ spec:
         env:
         - name: PORT
           value: "12345"
-        - name: NODENAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         - name: NAMESPACE
           valueFrom:
             fieldRef:
@@ -50,3 +46,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['app']
+        livenessProbe:
+          exec:
+            command:
+              - backend/bin/backend
+              - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5

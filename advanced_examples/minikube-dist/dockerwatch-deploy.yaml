@@ -22,7 +22,7 @@ metadata:
     app: dockerwatch
   name: dockerwatch
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: dockerwatch
@@ -50,6 +50,13 @@ spec:
         env:
         - name: BACKEND
           value: mnesia.default.svc.cluster.local
+        livenessProbe:
+          exec:
+            command:
+              - dockerwatch/bin/dockerwatch
+              - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
       volumes:
         - name: kube-keypair
           secret:

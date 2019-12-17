@@ -1,4 +1,4 @@
--name dockerwatch@${NODENAME}.${SVC}.${NAMESPACE}.svc.cluster.local
+-name dockerwatch@${HOSTNAME}.${SVC}.${NAMESPACE}.svc.cluster.local
 -setcookie dockerwatch
 -start_epmd false
 -epmd_module epmd_dns_srv
