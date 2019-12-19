@@ -9,7 +9,7 @@
 -module(epmd_dns_srv).
 
 -export([start_link/0, register_node/2, register_node/3, address_please/3,
-         port_please/2, port_please/3]).
+         port_please/2, port_please/3, names/0, names/1]).
 
 -include_lib("kernel/include/logger.hrl").
 -include_lib("kernel/include/inet.hrl").
@@ -47,6 +47,22 @@ address_please(Name, Host, Family) ->
                     ?LOG_INFO("DNS SRV lookup of \"~s@~s\" failed, using trying epmd",[Name,Host]),
                     {ok,Addr}
             end
+    end.
+
+
+%% This should actually return the names of the nodes at the address Host
+%% So we need a new API to resolve this.... 
+names() ->
+    {ok, Host} = inet:gethostname(),
+    names(Host).
+names(Host) ->
+    %% First try epmd to see if it exists
+    case erl_epmd:names(Host) of
+        {ok, Names} ->
+            {ok, Names};
+        _Else ->
+            %% Then try DNS SRV
+            {ok, [{FQDN,Port} || {_Prio,_Weight,Port,FQDN} <- inet_res:lookup(Host, in, srv)]}
     end.
 
 %% We just forward this to epmd as the SRV lookup failed
