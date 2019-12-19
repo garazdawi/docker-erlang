@@ -36,10 +36,10 @@ In a nutshell:
 
 In this demo we will be doing three things:
 
-* Create a new application called backend for mnesia
-* Modify dockerwatch to use mnesia as its storage
-* Create a Service and Deployment for the backend
-* Create a Deployment of dockerwatch that implements the Service
+* Create a new application called dw-db (dockerwatch database) that uses mnesia
+* Modify dockerwatch to use dw-db
+* Create a Service for erlang distribution and a StatefullSet for the dw-db
+* Create a Deployment of dockerwatch that implements the http/https Service
 
 First however, make sure that the minikube cluster is started:
 
@@ -50,53 +50,27 @@ and that you have cloned this repo and checked out this branch:
     > git clone https://github.com/erlang/docker-erlang-example
     > cd docker-erlang-example/advanced_examples/minikube-dist
 
-## Create backend
+## Create the dw-db backend
 
 The purpose of the backend is to be the service responsible for writing
 keeping the data. So the only thing it needs to do is some mnesia
-initialization when [starting](backend/src/backend_app.erl).
+initialization when [starting](backend/src/dockerwatch.erl).
 
 Since we are running inside a kluster where each pod gets its own IP address
 we don't really need epmd any more. So in this example we use the `-epmd_module`
-to implement our own static epmd client that always returns port 12345 as the
-distribution port. The module looks like this:
-
-```
--module(epmd_static).
-
--export([start_link/0, register_node/2, register_node/3,
-         port_please/2, address_please/3]).
-%% API.
-
-start_link() ->
-    ignore.
-
-register_node(Name, Port) ->
-    register_node(Name, Port, inet_tcp).
-register_node(_Name, _Port, _Driver) ->
-    {ok, 0}.
-
-port_please(_Name, _Host) ->
-    {port, 12345, 5}.
-
-address_please(Name, Host, AddressFamily) ->
-    erl_epmd:address_please(Name, Host, AddressFamily).
-```
+to implement our [own name resolution](backend/src/epmd_dns_srv.erl)
+based on EPMD and [DNS SRV](https://github.com/kubernetes/dns/blob/master/docs/specification.md#242---srv-records). 
 
 The module is then configured to be used in [vm.args.src](backend/config/vm.args.src):
 
     -start_epmd false
-    -epmd_module epmd_static
+    -epmd_module epmd_dns_srv
 
 Lastly net_kernel has to be configured to listen to the port, this is done in the
 [sys.config.src](backend/config/sys.config.src):
 
 ```
-{kernel, [{logger,[{handler,default,logger_std_h,#{}}]},
-          %%,{logger_level,info}
-           {inet_dist_listen_min, 12345},
-           {inet_dist_listen_max, 12345}
-          ]},
+{kernel, [{inet_dist_listen_min, 12345}]},
 ```
 
 ## Modify dockerwatch
@@ -124,11 +98,31 @@ and then we just use `${IP}` in [vm.args.src](dockerwatch/config/vm.args.src):
 
     -name dockerwatch@${IP}
 
-Also mnesia is configured to connect to the backend service at startup in
-[sys.config.src](dockerwatch/config/sys.config.src).
+We then use the DNS SRV record created by the dw-db service to get which node
+we should connect to when doing a operations.
 
 ```
-{mnesia, [{extra_db_nodes,['dockerwatch@backend.default.svc.cluster.local']}]}
+get_node_from_srv() ->
+    {ok, SVC} = application:get_env(dockerwatch,backend),
+    Nodes = inet_res:lookup(SVC,in,srv), %% Read the SRV record
+    
+    %% Calculate total Weight available
+    NodeSum = lists:foldl(fun({_,Weight,_,_},Acc) ->
+                                  Weight + Acc
+                          end,0,Nodes),
+                          
+    %% Select one of the nodes to handle the request
+    Rand = rand:uniform(NodeSum),
+    Host = lists:foldl(fun({_,Weight,_,Host},Acc) when (Acc - Weight) =< 0 ->
+                               Host;
+                          ({_,Weight,_,_Host},Acc) when is_integer(Acc) ->
+                               Acc - Weight;
+                          (_,Host) ->
+                               Host
+                       end,Rand,Nodes),
+
+    %% Create and return the selected node name
+    list_to_atom("dockerwatch@"++Host).
 ```
 
 ## Deploy the backend
@@ -138,44 +132,54 @@ from the dockerwatch nodes. This only works if there is only one backend node. I
 want to add more you need to use a more complex solution.
 
 ```
-kubectl create service clusterip backend --tcp=12345:12345
+kubectl create service clusterip db  --clusterip="None" --tcp=12345:12345
 service/backend created
 ```
 
 The backend is build like this:
 
     eval $(minikube docker-env)
-    docker build -t backend -f Dockerfile.backend .
+    docker build -t dw-db -f Dockerfile.backend .
 
 and then deployed like this:
 
 ```
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  ## Name and labels of the Deployment
-  labels:
-    app: backend
-  name: backend
+  name: db
 spec:
-  replicas: 1
+  replicas: 2 # by default is 1
+  serviceName: "db" # has to match .spec.template.metadata.labels.app
   selector:
     matchLabels:
-      app: backend
+      app: db # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: backend
+        app: db # has to match .spec.selector.matchLabels
     spec:
       containers:
-      ## The container to launch
-      - image: backend
-        name: backend
-        imagePullPolicy: Never
+      - name: db
+        image: dw-db
+        imagePullPolicy: Never  ## Set to Never as we built the image in the cluster
+        ports:
+        - containerPort: 12345
+          name: disterl
+        env:
+        - name: PORT
+          value: "12345"
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SVC
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
 EOF
 ```
-
 
 ## Deploy Dockerwatch
 
@@ -204,30 +208,32 @@ metadata:
     app: dockerwatch
   name: dockerwatch
 spec:
-  replicas: 10
+  replicas: 5
   selector:
     matchLabels:
-      app: dockerwatch
+      app: dockerwatch  # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: dockerwatch
+        app: dockerwatch # has to match .spec.selector.matchLabels
     spec:
       containers:
       ## The container to launch
-      - image: dockerwatch
-        name: dockerwatch
-        imagePullPolicy: Never
+      - name: dockerwatch
+        image: dockerwatch
+        imagePullPolicy: Never ## Set to Never as we built the image in the cluster
         ports:
         - containerPort: 8080
-          protocol: TCP
+          name: http
         - containerPort: 8443
-          protocol: TCP
+          name: https
         volumeMounts:
             - name: kube-keypair
               readOnly: true
               mountPath: /etc/ssl/certs
         env:
+        - name: BACKEND
+          value: db.default.svc.cluster.local
         - name: IP
           valueFrom:
             fieldRef:

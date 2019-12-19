@@ -1,40 +1,39 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: mnesia
+  name: db
   labels:
-    app: mnesia
+    app: db
 spec:
+  clusterIP: None
   ports:
   - port: 12345
-    name: mnesia
-  clusterIP: None
+    name: disterl
   selector:
-    app: mnesia
+    app: db
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mnesia
+  name: db
 spec:
+  replicas: 2 # by default is 1
+  serviceName: "db" # has to match .spec.template.metadata.labels.app
   selector:
     matchLabels:
-      app: mnesia # has to match .spec.template.metadata.labels
-  serviceName: "mnesia"
-  replicas: 2 # by default is 1
+      app: db # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: mnesia # has to match .spec.selector.matchLabels
+        app: db # has to match .spec.selector.matchLabels
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
-      - name: mnesia
-        image: backend
-        imagePullPolicy: Never
+      - name: db
+        image: dw-db
+        imagePullPolicy: Never  ## Set to Never as we built the image in the cluster
         ports:
         - containerPort: 12345
-          name: dist
+          name: disterl
         env:
         - name: PORT
           value: "12345"
@@ -49,7 +48,7 @@ spec:
         livenessProbe:
           exec:
             command:
-              - backend/bin/backend
+              - dw-db/bin/dw-db
               - ping
           initialDelaySeconds: 5
           periodSeconds: 5

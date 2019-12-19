@@ -5,5 +5,5 @@
            {inet_dist_listen_max, ${PORT}}
           ]
  },
- {backend, [{service,"${SVC}"}]}
+ {dw_db, [{service,"${SVC}"}]}
 ].

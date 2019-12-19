@@ -6,7 +6,7 @@
 %% Created: 2019-12-13
 %%
 
--module(backend_app).
+-module(dw_db_app).
 -behaviour(application).
 
 -export([start/2,stop/1]).
@@ -17,6 +17,7 @@
 %% API.
 
 start(_Type, _Args) ->
+    os:set_signal(sigchld, ignore),
     connect_db_nodes(),
     dockerwatch_sup:start_link().
 
@@ -31,7 +32,7 @@ connect_db_nodes() ->
     [net_adm:ping(N) || N <- Nodes].
 
 get_service() ->
-    {ok, SVC} = application:get_env(backend, service),
+    {ok, SVC} = application:get_env(dw_db, service),
     get_service(SVC,0,10).
 get_service(SVC,N,M) ->
     case inet:gethostbyname(SVC) of

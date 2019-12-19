@@ -21,10 +21,10 @@ RUN apk add --no-cache openssl && \
     apk add --no-cache ncurses-libs
 
 # Install the released application
-COPY --from=0 /buildroot/backend/_build/prod/rel/backend /backend
+COPY --from=0 /buildroot/backend/_build/prod/rel/dw-db /dw-db
 
 # Expose relevant ports
 EXPOSE 8080
 EXPOSE 8443
 
-CMD ["/backend/bin/backend", "foreground"]
+CMD ["/dw-db/bin/dw-db", "foreground"]

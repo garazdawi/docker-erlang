@@ -23,8 +23,7 @@ kubectl cluster-info
 JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl -n kube-system get pods -lcomponent=kube-addon-manager -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 10;echo "waiting for kube-addon-manager to be available"; kubectl get pods --all-namespaces; done
 # Wait for kube-dns to be ready.
 JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl -n kube-system get pods -lk8s-app=kube-dns -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 10;echo "waiting for kube-dns to be available"; kubectl get pods --all-namespaces; done
-kubectl create service clusterip backend --tcp=12345:12345
-docker build -t backend -f Dockerfile.backend .
+docker build -t dw-db -f Dockerfile.backend .
 kubectl apply -f backend-deploy.yaml
 kubectl create service nodeport dockerwatch --tcp=8080:8080 --tcp=8443:8443
 kubectl get service

@@ -37,10 +37,14 @@ rpc(M,F,A) ->
 
 get_node_from_srv() ->
     {ok, SVC} = application:get_env(dockerwatch,backend),
-    Nodes = inet_res:lookup(SVC,in,srv),
+    Nodes = inet_res:lookup(SVC,in,srv), % Read the SRV record
+
+    %% Calculate total Weight available
     NodeSum = lists:foldl(fun({_,Weight,_,_},Acc) ->
                                   Weight + Acc
                           end,0,Nodes),
+
+    %% Select one of the nodes to handle the request
     Rand = rand:uniform(NodeSum),
     Host = lists:foldl(fun({_,Weight,_,Host},Acc) when (Acc - Weight) =< 0 ->
                                Host;
@@ -49,4 +53,6 @@ get_node_from_srv() ->
                           (_,Host) ->
                                Host
                        end,Rand,Nodes),
+
+    %% Create and return the selected node name
     list_to_atom("dockerwatch@"++Host).

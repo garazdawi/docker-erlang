@@ -22,34 +22,36 @@ metadata:
     app: dockerwatch
   name: dockerwatch
 spec:
-  replicas: 5
+  replicas: 10
   selector:
     matchLabels:
-      app: dockerwatch
+      app: dockerwatch  # has to match .spec.template.metadata.labels
   template:
     metadata:
       labels:
-        app: dockerwatch
+        app: dockerwatch # has to match .spec.selector.matchLabels
     spec:
       containers:
       ## The container to launch
-      - image: dockerwatch
-        name: dockerwatch
+      - name: dockerwatch
+        image: dockerwatch
         imagePullPolicy: Never ## Set to Never as we built the image in the cluster
-        stdin: true
-        tty: true
         ports:
         - containerPort: 8080
-          protocol: TCP
+          name: http
         - containerPort: 8443
-          protocol: TCP
+          name: https
         volumeMounts:
             - name: kube-keypair
               readOnly: true
               mountPath: /etc/ssl/certs
         env:
         - name: BACKEND
-          value: mnesia.default.svc.cluster.local
+          value: db.default.svc.cluster.local
+        - name: IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         livenessProbe:
           exec:
             command:

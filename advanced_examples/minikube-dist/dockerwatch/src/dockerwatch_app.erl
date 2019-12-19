@@ -13,6 +13,7 @@
 %% API.
 
 start(_Type, _Args) ->
+    os:set_signal(sigchld, ignore),
     dockerwatch_sup:start_link().
 
 stop(_State) ->

@@ -1,7 +1,7 @@
 %% Feel free to use, reuse and abuse the code in this file.
 
-{application, backend, [
-	{description, "Mnesia node."},
+{application, dw_db, [
+	{description, "Dockerwatch mnesia backend node."},
 	{vsn, "1.0.0"},
 	{modules, []},
 	{registered, [dockerwatch_sup]},
@@ -9,6 +9,6 @@
                         stdlib,
                         mnesia
 	]},
-	{mod, {backend_app, []}},
+	{mod, {dw_db_app, []}},
 	{env, []}
 ]}.
