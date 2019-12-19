@@ -13,6 +13,8 @@
 %% API.
 
 start(_Type, _Args) ->
+    %% We ignore SIGCHLD in order to not create any zombie processes
+    os:set_signal(sigchld, ignore),
     dockerwatch_sup:start_link().
 
 stop(_State) ->

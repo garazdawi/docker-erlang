@@ -142,7 +142,6 @@ Let's parse some of the input.
 
  * `-d`, starts the container in the background and prints the container ID.
  * `-p 8443:8443`, exposes port `8443` from the container to our localhost.
- * `--init`, use the tini initialization as PID 1 in order to prevent zombie processes.
  * `--volume="$PWD/ssl:/etc/ssl/certs"`, mounts our local directory
    (`$PWD/ssl`) with certificates to `/etc/ssl/certs` the container.
  * `--log-driver=syslog`, will log all data from stdout in the container to our local syslog.
